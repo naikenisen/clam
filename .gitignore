@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Results and logs
+results/
+eval_results/
+predictions/
+*.log
+*.pt
+*.pth
+
+# Data (optionnel - décommenter si vous ne voulez pas versionner les données)
+# dataset_csv/
+# splits/
+# *.h5
+# *.csv
+
+# OS
+.DS_Store
+Thumbs.db
