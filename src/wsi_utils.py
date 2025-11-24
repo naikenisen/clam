@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import os
 import pdb
-from wsi_core.util_classes import Mosaic_Canvas
+from src.util_classes import Mosaic_Canvas
 from PIL import Image
 import math
 import cv2
@@ -207,37 +207,7 @@ def DrawMapFromCoords(canvas, wsi_object, coords, patch_size, vis_level, indices
 
     return Image.fromarray(canvas)
 
-def StitchPatches(hdf5_file_path, downscale=16, draw_grid=False, bg_color=(0,0,0), alpha=-1):
-    with h5py.File(hdf5_file_path, 'r') as file:
-        dset = file['imgs']
-        coords = file['coords'][:]
-        if 'downsampled_level_dim' in dset.attrs.keys():
-            w, h = dset.attrs['downsampled_level_dim']
-        else:
-            w, h = dset.attrs['level_dim']
 
-    print('original size: {} x {}'.format(w, h))
-    w = w // downscale
-    h = h //downscale
-    coords = (coords / downscale).astype(np.int32)
-    print('downscaled size for stiching: {} x {}'.format(w, h))
-    print(f'number of patches: {len(coords)}')
-    img_shape = dset[0].shape
-    print('patch shape: {}'.format(img_shape))
-    downscaled_shape = (img_shape[1] // downscale, img_shape[0] // downscale)
-
-    if w*h > Image.MAX_IMAGE_PIXELS: 
-        raise Image.DecompressionBombError("Visualization Downscale %d is too large" % downscale)
-    
-    if alpha < 0 or alpha == -1:
-        heatmap = Image.new(size=(w,h), mode="RGB", color=bg_color)
-    else:
-        heatmap = Image.new(size=(w,h), mode="RGBA", color=bg_color + (int(255 * alpha),))
-    
-    heatmap = np.array(heatmap)
-    heatmap = DrawMap(heatmap, dset, coords, downscaled_shape, indices=None, draw_grid=draw_grid)
-    
-    return heatmap
 
 def StitchCoords(hdf5_file_path, wsi_object, downscale=16, draw_grid=False, bg_color=(0,0,0), alpha=-1):
     wsi = wsi_object.getOpenSlide()

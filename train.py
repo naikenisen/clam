@@ -2,7 +2,7 @@ import os
 from random import seed
 from src.file_utils import save_pkl
 from src.utils import *
-from preprocessing_src.dataset_generic import Generic_MIL_Dataset
+from src.dataset_generic import Generic_MIL_Dataset
 import torch
 from torch.utils.data import DataLoader, sampler
 import torch.nn as nn
@@ -14,7 +14,7 @@ import numpy as np
 import torch
 from src.utils import *
 import os
-from preprocessing_src.dataset_generic import save_splits
+from src.dataset_generic import save_splits
 from src.model_clam import CLAM_SB
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import roc_auc_score, roc_curve
