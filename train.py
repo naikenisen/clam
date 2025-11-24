@@ -71,7 +71,7 @@ def seed_torch(seed=7):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-seed_torch(args.seed)
+seed_torch(seed)
 
 encoding_size = 1024
 settings = {'num_splits': k, 
