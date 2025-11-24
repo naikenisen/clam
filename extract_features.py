@@ -1,6 +1,5 @@
 import time
 import os
-import argparse
 import pdb
 
 import torch
@@ -16,6 +15,7 @@ import numpy as np
 from utils.file_utils import save_hdf5
 from dataset_modules.dataset_h5 import Dataset_All_Bags, Whole_Slide_Bag, get_eval_transforms
 from models import get_encoder
+import src.config as config
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -47,28 +47,15 @@ def compute_w_loader(output_path, loader, model, verbose = 0):
 	return output_path
 
 
-parser = argparse.ArgumentParser(description='Feature Extraction')
-parser.add_argument('--data_dir', type=str)
-parser.add_argument('--csv_path', type=str)
-parser.add_argument('--feat_dir', type=str)
-parser.add_argument('--model_name', type=str, default='resnet50_trunc', choices=['resnet50_trunc', 'uni_v1', 'conch_v1'])
-parser.add_argument('--batch_size', type=int, default=256)
-parser.add_argument('--slide_ext', type=str, default= '.svs')
-parser.add_argument('--no_auto_skip', default=False, action='store_true')
-parser.add_argument('--target_patch_size', type=int, default=224,
-					help='the desired size of patches for scaling before feature embedding')
-args = parser.parse_args()
-
 if __name__ == '__main__':
 
 	print('initializing dataset')
-	csv_path = args.csv_path
-	bags_dataset = Dataset_All_Bags(csv_path)
+	bags_dataset = Dataset_All_Bags(config.csv_path)
 	
-	os.makedirs(args.feat_dir, exist_ok=True)
-	dest_files = os.listdir(args.feat_dir)
+	os.makedirs(config.feat_dir, exist_ok=True)
+	dest_files = os.listdir(config.feat_dir)
 
-	model, img_transforms = get_encoder(args.model_name, target_img_size=args.target_patch_size)		
+	model, img_transforms = get_encoder(config.model_name, target_img_size=config.target_patch_size)		
 	model = model.to(device)
 	_ = model.eval()
 
@@ -76,22 +63,22 @@ if __name__ == '__main__':
 	
 	total = len(bags_dataset)
 	for bag_candidate_idx in range(total):
-		slide_id = bags_dataset[bag_candidate_idx].split(args.slide_ext)[0]
+		slide_id = bags_dataset[bag_candidate_idx].split(config.slide_ext)[0]
 		bag_name = slide_id + '.h5'
-		bag_candidate = os.path.join(args.data_dir, 'patches', bag_name)
+		bag_candidate = os.path.join(config.data_dir, 'patches', bag_name)
 
 		print('\nprogress: {}/{}'.format(bag_candidate_idx, total))
 		print(bag_name)
-		if not args.no_auto_skip and slide_id+'.pt' in dest_files:
+		if not config.no_auto_skip and slide_id+'.pt' in dest_files:
 			print('skipped {}'.format(slide_id))
 			continue 
 
-		output_path = os.path.join(args.feat_dir, 'h5_files', bag_name)
+		output_path = os.path.join(config.feat_dir, 'h5_files', bag_name)
 		file_path = bag_candidate
 		time_start = time.time()
 
 		dataset = Whole_Slide_Bag(file_path=file_path, img_transforms=img_transforms)
-		loader = DataLoader(dataset=dataset, batch_size=args.batch_size, **loader_kwargs)
+		loader = DataLoader(dataset=dataset, batch_size=config.batch_size, **loader_kwargs)
 		output_file_path = compute_w_loader(output_path, loader = loader, model = model, verbose = 1)
 
 		time_elapsed = time.time() - time_start
@@ -103,4 +90,4 @@ if __name__ == '__main__':
 
 		features = torch.from_numpy(features)
 		bag_base, _ = os.path.splitext(bag_name)
-		torch.save(features, os.path.join(args.feat_dir, 'pt_files', bag_base+'.pt'))
+		torch.save(features, os.path.join(config.feat_dir, 'pt_files', bag_base+'.pt'))

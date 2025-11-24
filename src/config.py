@@ -41,3 +41,17 @@ preset = None  # predefined profile of default segmentation and filter parameter
 patch_level = 0  # downsample level at which to patch
 custom_downsample = 1  # custom downscale when native downsample is not available
 process_list = None  # name of list of images to process with parameters (.csv)
+
+# Split creation parameters
+val_frac = 0.1  # fraction of labels for validation
+test_frac = 0.1  # fraction of labels for test
+
+# Feature extraction parameters
+data_dir = None  # directory containing patch data
+csv_path = None  # path to CSV file with slide information
+feat_dir = None  # directory to save extracted features
+model_name = 'resnet50_trunc'  # model for feature extraction: resnet50_trunc, uni_v1, conch_v1
+batch_size = 256  # batch size for feature extraction
+slide_ext = '.svs'  # slide file extension
+no_auto_skip = False  # don't skip slides that already have features
+target_patch_size = 224  # desired size of patches for scaling before feature embedding
