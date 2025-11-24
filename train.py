@@ -14,8 +14,6 @@ from src.config import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print('\nLoad Dataset')
-
 n_classes=2
 dataset = Generic_MIL_Dataset(csv_path = 'dataset_csv/tumor_vs_normal_dummy_clean.csv',
                         data_dir= os.path.join(data_root_dir, 'tumor_vs_normal_resnet_features'),
