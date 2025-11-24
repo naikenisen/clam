@@ -12,48 +12,7 @@ import pandas as pd
 import numpy as np
 from src.config import *
 
-def main():
-    if not os.path.isdir(results_dir):
-        os.mkdir(results_dir)
-
-    if k_start == -1:
-        start = 0
-    else:
-        start = k_start
-    if k_end == -1:
-        end = k
-    else:
-        end = k_end
-
-    all_test_auc = []
-    all_val_auc = []
-    all_test_acc = []
-    all_val_acc = []
-    folds = np.arange(start, end)
-    for i in folds:
-        train_dataset, val_dataset, test_dataset = dataset.return_splits(from_id=False, 
-                csv_path='{}/splits_{}.csv'.format(split_dir, i))
-        
-        datasets = (train_dataset, val_dataset, test_dataset)
-        results, test_auc, val_auc, test_acc, val_acc  = train(datasets, i)
-        all_test_auc.append(test_auc)
-        all_val_auc.append(val_auc)
-        all_test_acc.append(test_acc)
-        all_val_acc.append(val_acc)
-        filename = os.path.join(results_dir, 'split_{}_results.pkl'.format(i))
-        save_pkl(filename, results)
-
-    final_df = pd.DataFrame({'folds': folds, 'test_auc': all_test_auc, 
-        'val_auc': all_val_auc, 'test_acc': all_test_acc, 'val_acc' : all_val_acc})
-
-    if len(folds) != k:
-        save_name = 'summary_partial_{}_{}.csv'.format(start, end)
-    else:
-        save_name = 'summary.csv'
-    final_df.to_csv(os.path.join(results_dir, save_name))
-
-
-device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 encoding_size = 1024
 settings = {'num_splits': k, 
@@ -110,11 +69,47 @@ with open(results_dir + '/experiment_{}.txt'.format(exp_code), 'w') as f:
 f.close()
 
 for key, val in settings.items():
-    print("{}:  {}".format(key, val))        
-
-if __name__ == "__main__":
-    results = main()
-    print("finished!")
-    print("end script")
+    print("{}:  {}".format(key, val))
 
 
+if not os.path.isdir(results_dir):
+    os.mkdir(results_dir)
+
+if k_start == -1:
+    start = 0
+else:
+    start = k_start
+if k_end == -1:
+    end = k
+else:
+    end = k_end
+
+all_test_auc = []
+all_val_auc = []
+all_test_acc = []
+all_val_acc = []
+folds = np.arange(start, end)
+for i in folds:
+    train_dataset, val_dataset, test_dataset = dataset.return_splits(from_id=False, 
+            csv_path='{}/splits_{}.csv'.format(split_dir, i))
+    
+    datasets = (train_dataset, val_dataset, test_dataset)
+    results, test_auc, val_auc, test_acc, val_acc = train(datasets, i)
+    all_test_auc.append(test_auc)
+    all_val_auc.append(val_auc)
+    all_test_acc.append(test_acc)
+    all_val_acc.append(val_acc)
+    filename = os.path.join(results_dir, 'split_{}_results.pkl'.format(i))
+    save_pkl(filename, results)
+
+final_df = pd.DataFrame({'folds': folds, 'test_auc': all_test_auc, 
+    'val_auc': all_val_auc, 'test_acc': all_test_acc, 'val_acc': all_val_acc})
+
+if len(folds) != k:
+    save_name = 'summary_partial_{}_{}.csv'.format(start, end)
+else:
+    save_name = 'summary.csv'
+final_df.to_csv(os.path.join(results_dir, save_name))
+
+print("finished!")
+print("end script")

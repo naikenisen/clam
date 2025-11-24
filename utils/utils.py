@@ -3,7 +3,6 @@ import torch
 import numpy as np
 import torch.nn as nn
 import pdb
-
 import torch
 import numpy as np
 import torch.nn as nn
@@ -15,6 +14,7 @@ import torch.nn.functional as F
 import math
 from itertools import islice
 import collections
+
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SubsetSequentialSampler(Sampler):

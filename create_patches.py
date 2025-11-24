@@ -1,9 +1,7 @@
-# internal imports
 from wsi_core.WholeSlideImage import WholeSlideImage 
 from wsi_core.wsi_utils import StitchPatches
 from wsi_core.batch_process_utils import initialize_df
 import src.config as config
-# other imports
 import os
 import numpy as np
 import time
