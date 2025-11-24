@@ -2,11 +2,11 @@
 from wsi_core.WholeSlideImage import WholeSlideImage 
 from wsi_core.wsi_utils import StitchPatches
 from wsi_core.batch_process_utils import initialize_df
+import src.config as config
 # other imports
 import os
 import numpy as np
 import time
-import argparse
 import pdb
 import pandas as pd
 
@@ -14,28 +14,17 @@ def stitching(file_path, downscale = 64):
 	start = time.time()
 	heatmap = StitchPatches(file_path, downscale=downscale, bg_color=(0,0,0), alpha=-1, draw_grid=False)
 	total_time = time.time() - start
-	
 	return heatmap, total_time
 
 def segment(WSI_object, seg_params, filter_params):
-	### Start Seg Timer
 	start_time = time.time()
-
-	# Segment
 	WSI_object.segmentTissue(**seg_params, filter_params=filter_params)
-
-	### Stop Seg Timers
 	seg_time_elapsed = time.time() - start_time   
 	return WSI_object, seg_time_elapsed
 
 def patching(WSI_object, **kwargs):
-	### Start Patch Timer
 	start_time = time.time()
-
-	# Patch
 	file_path = WSI_object.createPatches_bag_hdf5(**kwargs, save_coord=True)
-
-	### Stop Patch Timer
 	patch_time_elapsed = time.time() - start_time
 	return file_path, patch_time_elapsed
 
@@ -52,8 +41,6 @@ def seg_and_patch(source, save_dir, patch_save_dir, mask_save_dir, stitch_save_d
 				  stitch= False, 
 				  patch = False, auto_skip=True, process_list = None):
 	
-
-
 	slides = sorted(os.listdir(source))
 	slides = [slide for slide in slides if os.path.isfile(os.path.join(source, slide))]
 
@@ -199,48 +186,24 @@ def seg_and_patch(source, save_dir, patch_save_dir, mask_save_dir, stitch_save_d
 		
 	return seg_times, patch_times
 
-parser = argparse.ArgumentParser(description='seg and patch')
-parser.add_argument('--source', type = str,
-					help='path to folder containing raw wsi image files')
-parser.add_argument('--step_size', type = int, default=256,
-					help='step_size')
-parser.add_argument('--patch_size', type = int, default=256,
-					help='patch_size')
-parser.add_argument('--patch', default=False, action='store_true')
-parser.add_argument('--seg', default=False, action='store_true')
-parser.add_argument('--stitch', default=False, action='store_true')
-parser.add_argument('--no_auto_skip', default=True, action='store_false')
-parser.add_argument('--save_dir', type = str,
-					help='directory to save processed data')
-parser.add_argument('--preset', default=None, type=str,
-					help='predefined profile of default segmentation and filter parameters (.csv)')
-parser.add_argument('--patch_level', type=int, default=0, 
-					help='downsample level at which to patch')
-parser.add_argument('--custom_downsample', type= int, choices=[1,2], default=1, 
-					help='custom downscale when native downsample is not available (only tested w/ 2x downscale)')
-parser.add_argument('--process_list',  type = str, default=None,
-					help='name of list of images to process with parameters (.csv)')
 
 if __name__ == '__main__':
-	args = parser.parse_args()
+	patch_save_dir = os.path.join(config.save_dir, 'patches')
+	mask_save_dir = os.path.join(config.save_dir, 'masks')
+	stitch_save_dir = os.path.join(config.save_dir, 'stitches')
 
-	patch_save_dir = os.path.join(args.save_dir, 'patches')
-	mask_save_dir = os.path.join(args.save_dir, 'masks')
-	stitch_save_dir = os.path.join(args.save_dir, 'stitches')
-
-	if args.process_list:
-		process_list = os.path.join(args.save_dir, args.process_list)
-
+	if config.process_list:
+		process_list = os.path.join(config.save_dir, config.process_list)
 	else:
 		process_list = None
 
-	print('source: ', args.source)
+	print('source: ', config.source)
 	print('patch_save_dir: ', patch_save_dir)
 	print('mask_save_dir: ', mask_save_dir)
 	print('stitch_save_dir: ', stitch_save_dir)
 	
-	directories = {'source': args.source, 
-				   'save_dir': args.save_dir,
+	directories = {'source': config.source, 
+				   'save_dir': config.save_dir,
 				   'patch_save_dir': patch_save_dir, 
 				   'mask_save_dir' : mask_save_dir, 
 				   'stitch_save_dir': stitch_save_dir} 
@@ -250,15 +213,14 @@ if __name__ == '__main__':
 		if key not in ['source']:
 			os.makedirs(val, exist_ok=True)
 
-
 	seg_params = {'seg_level': -1, 'sthresh': 8, 'mthresh': 7, 'close': 4, 'use_otsu': False,
 				  'keep_ids': 'none', 'exclude_ids': 'none'}
 	filter_params = {'a_t':100, 'a_h': 16, 'max_n_holes':8 }
 	vis_params = {'vis_level': -1, 'line_thickness': 250}
 	patch_params = {'white_thresh': 5, 'black_thresh': 40, 'use_padding': True, 'contour_fn': 'four_pt'}
 
-	if args.preset:
-		preset_df = pd.read_csv(os.path.join('presets', args.preset))
+	if config.preset:
+		preset_df = pd.read_csv(os.path.join('presets', config.preset))
 		for key in seg_params.keys():
 			seg_params[key] = preset_df.loc[0, key]
 
@@ -279,8 +241,8 @@ if __name__ == '__main__':
 	print(parameters)
 
 	seg_times, patch_times = seg_and_patch(**directories, **parameters,
-											patch_size = args.patch_size, step_size=args.step_size, 
-											seg = args.seg,  use_default_params=False, save_mask = True, 
-											stitch= args.stitch, custom_downsample = args.custom_downsample, 
-											patch_level=args.patch_level, patch = args.patch,
-											process_list = process_list, auto_skip=args.no_auto_skip)
+											patch_size = config.patch_size, step_size=config.step_size, 
+											seg = config.seg,  use_default_params=False, save_mask = True, 
+											stitch= config.stitch, custom_downsample = config.custom_downsample, 
+											patch_level=config.patch_level, patch = config.patch,
+											process_list = process_list, auto_skip=config.auto_skip)
