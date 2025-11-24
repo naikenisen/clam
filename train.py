@@ -14,28 +14,6 @@ from src.config import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-encoding_size = 1024
-settings = {'num_splits': k, 
-            'k_start': k_start,
-            'k_end': k_end,
-            'task': task,
-            'max_epochs': max_epochs, 
-            'results_dir': results_dir, 
-            'lr': lr,
-            'experiment': exp_code,
-            'reg': reg,
-            'label_frac': label_frac,
-            'bag_loss': bag_loss,
-            'seed': seed,
-            'model_type': 'clam_sb',
-            'model_size': model_size,
-            "use_drop_out": drop_out,
-            'weighted_sample': weighted_sample,
-            'opt': opt,
-            'bag_weight': bag_weight,
-            'inst_loss': inst_loss,
-            'B': B}
-
 print('\nLoad Dataset')
 
 n_classes=2
@@ -61,17 +39,6 @@ else:
 print('split_dir: ', split_dir)
 assert os.path.isdir(split_dir)
 
-settings.update({'split_dir': split_dir})
-
-
-with open(results_dir + '/experiment_{}.txt'.format(exp_code), 'w') as f:
-    print(settings, file=f)
-f.close()
-
-for key, val in settings.items():
-    print("{}:  {}".format(key, val))
-
-
 if not os.path.isdir(results_dir):
     os.mkdir(results_dir)
 
@@ -94,7 +61,7 @@ for i in folds:
             csv_path='{}/splits_{}.csv'.format(split_dir, i))
     
     datasets = (train_dataset, val_dataset, test_dataset)
-    results, test_auc, val_auc, test_acc, val_acc = train(datasets, i)
+    results, test_auc, val_auc, test_acc, val_acc = train(datasets, i, n_classes)
     all_test_auc.append(test_auc)
     all_val_auc.append(val_auc)
     all_test_acc.append(test_acc)

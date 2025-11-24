@@ -7,6 +7,7 @@ from models.model_clam import CLAM_SB
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.metrics import auc as calc_auc
+from src import config
 
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -88,16 +89,16 @@ class EarlyStopping:
         torch.save(model.state_dict(), ckpt_name)
         self.val_loss_min = val_loss
 
-def train(datasets, cur, args):
+def train(datasets, cur, n_classes):
     """   
         train for a single fold
     """
     print('\nTraining Fold {}!'.format(cur))
-    writer_dir = os.path.join(args.results_dir, str(cur))
+    writer_dir = os.path.join(config.results_dir, str(cur))
     if not os.path.isdir(writer_dir):
         os.mkdir(writer_dir)
 
-    if args.log_data:
+    if config.log_data:
         from tensorboardX import SummaryWriter
         writer = SummaryWriter(writer_dir, flush_secs=15)
 
@@ -106,16 +107,16 @@ def train(datasets, cur, args):
 
     print('\nInit train/val/test splits...', end=' ')
     train_split, val_split, test_split = datasets
-    save_splits(datasets, ['train', 'val', 'test'], os.path.join(args.results_dir, 'splits_{}.csv'.format(cur)))
+    save_splits(datasets, ['train', 'val', 'test'], os.path.join(config.results_dir, 'splits_{}.csv'.format(cur)))
     print('Done!')
     print("Training on {} samples".format(len(train_split)))
     print("Validating on {} samples".format(len(val_split)))
     print("Testing on {} samples".format(len(test_split)))
 
     print('\nInit loss function...', end=' ')
-    if args.bag_loss == 'svm':
+    if config.bag_loss == 'svm':
         from topk.svm import SmoothTop1SVM
-        loss_fn = SmoothTop1SVM(n_classes = args.n_classes)
+        loss_fn = SmoothTop1SVM(n_classes = n_classes)
         if device.type == 'cuda':
             loss_fn = loss_fn.cuda()
     else:
@@ -123,20 +124,20 @@ def train(datasets, cur, args):
     print('Done!')
     
     print('\nInit Model...', end=' ')
-    model_dict = {"dropout": args.drop_out, 
-                  'n_classes': args.n_classes, 
-                  "embed_dim": args.embed_dim}
+    model_dict = {"dropout": config.drop_out, 
+                  'n_classes': n_classes, 
+                  "embed_dim": config.embed_dim}
     
-    if args.model_size is not None:
-        model_dict.update({"size_arg": args.model_size})
+    if config.model_size is not None:
+        model_dict.update({"size_arg": config.model_size})
     
-    if args.subtyping:
+    if config.subtyping:
         model_dict.update({'subtyping': True})
     
-    if args.B > 0:
-        model_dict.update({'k_sample': args.B})
+    if config.B > 0:
+        model_dict.update({'k_sample': config.B})
     
-    if args.inst_loss == 'svm':
+    if config.inst_loss == 'svm':
         from topk.svm import SmoothTop1SVM
         instance_loss_fn = SmoothTop1SVM(n_classes = 2)
         if device.type == 'cuda':
@@ -151,49 +152,49 @@ def train(datasets, cur, args):
     print_network(model)
 
     print('\nInit optimizer ...', end=' ')
-    optimizer = get_optim(model, args)
+    optimizer = get_optim(model, config)
     print('Done!')
     
     print('\nInit Loaders...', end=' ')
-    train_loader = get_split_loader(train_split, training=True, testing = args.testing, weighted = args.weighted_sample)
-    val_loader = get_split_loader(val_split,  testing = args.testing)
-    test_loader = get_split_loader(test_split, testing = args.testing)
+    train_loader = get_split_loader(train_split, training=True, testing = config.testing, weighted = config.weighted_sample)
+    val_loader = get_split_loader(val_split,  testing = config.testing)
+    test_loader = get_split_loader(test_split, testing = config.testing)
     print('Done!')
 
     print('\nSetup EarlyStopping...', end=' ')
-    if args.early_stopping:
+    if config.early_stopping:
         early_stopping = EarlyStopping(patience = 20, stop_epoch=50, verbose = True)
 
     else:
         early_stopping = None
     print('Done!')
 
-    for epoch in range(args.max_epochs):
-        if not args.no_inst_cluster:     
-            train_loop_clam(epoch, model, train_loader, optimizer, args.n_classes, args.bag_weight, writer, loss_fn)
-            stop = validate_clam(cur, epoch, model, val_loader, args.n_classes, 
-                early_stopping, writer, loss_fn, args.results_dir)
+    for epoch in range(config.max_epochs):
+        if not config.no_inst_cluster:     
+            train_loop_clam(epoch, model, train_loader, optimizer, n_classes, config.bag_weight, writer, loss_fn)
+            stop = validate_clam(cur, epoch, model, val_loader, n_classes, 
+                early_stopping, writer, loss_fn, config.results_dir)
         
         else:
-            train_loop(epoch, model, train_loader, optimizer, args.n_classes, writer, loss_fn)
-            stop = validate(cur, epoch, model, val_loader, args.n_classes, 
-                early_stopping, writer, loss_fn, args.results_dir)
+            train_loop(epoch, model, train_loader, optimizer, n_classes, writer, loss_fn)
+            stop = validate(cur, epoch, model, val_loader, n_classes, 
+                early_stopping, writer, loss_fn, config.results_dir)
         
         if stop: 
             break
 
-    if args.early_stopping:
-        model.load_state_dict(torch.load(os.path.join(args.results_dir, "s_{}_checkpoint.pt".format(cur))))
+    if config.early_stopping:
+        model.load_state_dict(torch.load(os.path.join(config.results_dir, "s_{}_checkpoint.pt".format(cur))))
     else:
-        torch.save(model.state_dict(), os.path.join(args.results_dir, "s_{}_checkpoint.pt".format(cur)))
+        torch.save(model.state_dict(), os.path.join(config.results_dir, "s_{}_checkpoint.pt".format(cur)))
 
-    _, val_error, val_auc, _= summary(model, val_loader, args.n_classes)
+    _, val_error, val_auc, _= summary(model, val_loader, n_classes)
     print('Val error: {:.4f}, ROC AUC: {:.4f}'.format(val_error, val_auc))
 
-    results_dict, test_error, test_auc, acc_logger = summary(model, test_loader, args.n_classes)
+    results_dict, test_error, test_auc, acc_logger = summary(model, test_loader, n_classes)
     print('Test error: {:.4f}, ROC AUC: {:.4f}'.format(test_error, test_auc))
 
-    for i in range(args.n_classes):
+    for i in range(n_classes):
         acc, correct, count = acc_logger.get_summary(i)
         print('class {}: acc {}, correct {}/{}'.format(i, acc, correct, count))
 

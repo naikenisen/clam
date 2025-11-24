@@ -69,11 +69,11 @@ def get_split_loader(split_dataset, training = False, testing = False, weighted 
 
 	return loader
 
-def get_optim(model, args):
-	if args.opt == "adam":
-		optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.reg)
-	elif args.opt == 'sgd':
-		optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, momentum=0.9, weight_decay=args.reg)
+def get_optim(model, cfg):
+	if cfg.opt == "adam":
+		optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, weight_decay=cfg.reg)
+	elif cfg.opt == 'sgd':
+		optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, momentum=0.9, weight_decay=cfg.reg)
 	else:
 		raise NotImplementedError
 	return optimizer
