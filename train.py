@@ -1,11 +1,9 @@
-import pdb
 import os
-import math
 from random import seed
-from utils.file_utils import save_pkl, load_pkl
+from utils.file_utils import save_pkl
 from utils.utils import *
 from utils.core_utils import train
-from dataset_modules.dataset_generic import Generic_WSI_Classification_Dataset, Generic_MIL_Dataset
+from dataset_modules.dataset_generic import Generic_MIL_Dataset
 import torch
 from torch.utils.data import DataLoader, sampler
 import torch.nn as nn
@@ -33,7 +31,6 @@ def main():
     all_val_acc = []
     folds = np.arange(start, end)
     for i in folds:
-        seed_torch(seed)
         train_dataset, val_dataset, test_dataset = dataset.return_splits(from_id=False, 
                 csv_path='{}/splits_{}.csv'.format(split_dir, i))
         
@@ -43,7 +40,6 @@ def main():
         all_val_auc.append(val_auc)
         all_test_acc.append(test_acc)
         all_val_acc.append(val_acc)
-        #write results to pkl
         filename = os.path.join(results_dir, 'split_{}_results.pkl'.format(i))
         save_pkl(filename, results)
 
@@ -58,20 +54,6 @@ def main():
 
 
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-def seed_torch(seed=7):
-    import random
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if device.type == 'cuda':
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed) # if you are using multi-GPU.
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-
-seed_torch(seed)
 
 encoding_size = 1024
 settings = {'num_splits': k, 
@@ -99,34 +81,16 @@ if model_type in ['clam_sb', 'clam_mb']:
 
 print('\nLoad Dataset')
 
-if task == 'task_1_tumor_vs_normal':
-    n_classes=2
-    dataset = Generic_MIL_Dataset(csv_path = 'dataset_csv/tumor_vs_normal_dummy_clean.csv',
-                            data_dir= os.path.join(data_root_dir, 'tumor_vs_normal_resnet_features'),
-                            shuffle = False, 
-                            seed = seed, 
-                            print_info = True,
-                            label_dict = {'normal_tissue':0, 'tumor_tissue':1},
-                            patient_strat=False,
-                            ignore=[])
+n_classes=2
+dataset = Generic_MIL_Dataset(csv_path = 'dataset_csv/tumor_vs_normal_dummy_clean.csv',
+                        data_dir= os.path.join(data_root_dir, 'tumor_vs_normal_resnet_features'),
+                        shuffle = False, 
+                        seed = seed, 
+                        print_info = True,
+                        label_dict = {'normal_tissue':0, 'tumor_tissue':1},
+                        patient_strat=False,
+                        ignore=[])
 
-elif task == 'task_2_tumor_subtyping':
-    n_classes=3
-    dataset = Generic_MIL_Dataset(csv_path = 'dataset_csv/tumor_subtyping_dummy_clean.csv',
-                            data_dir= os.path.join(data_root_dir, 'tumor_subtyping_resnet_features'),
-                            shuffle = False, 
-                            seed = seed, 
-                            print_info = True,
-                            label_dict = {'subtype_1':0, 'subtype_2':1, 'subtype_3':2},
-                            patient_strat= False,
-                            ignore=[])
-
-    if model_type in ['clam_sb', 'clam_mb']:
-        assert subtyping 
-        
-else:
-    raise NotImplementedError
-    
 if not os.path.isdir(results_dir):
     os.mkdir(results_dir)
 
@@ -147,7 +111,6 @@ with open(results_dir + '/experiment_{}.txt'.format(exp_code), 'w') as f:
     print(settings, file=f)
 f.close()
 
-print("################# Settings ###################")
 for key, val in settings.items():
     print("{}:  {}".format(key, val))        
 
