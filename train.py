@@ -68,16 +68,14 @@ settings = {'num_splits': k,
             'label_frac': label_frac,
             'bag_loss': bag_loss,
             'seed': seed,
-            'model_type': model_type,
+            'model_type': 'clam_sb',
             'model_size': model_size,
             "use_drop_out": drop_out,
             'weighted_sample': weighted_sample,
-            'opt': opt}
-
-if model_type in ['clam_sb', 'clam_mb']:
-   settings.update({'bag_weight': bag_weight,
-                    'inst_loss': inst_loss,
-                    'B': B})
+            'opt': opt,
+            'bag_weight': bag_weight,
+            'inst_loss': inst_loss,
+            'B': B}
 
 print('\nLoad Dataset')
 

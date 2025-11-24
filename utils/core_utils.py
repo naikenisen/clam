@@ -3,8 +3,7 @@ import torch
 from utils.utils import *
 import os
 from dataset_modules.dataset_generic import save_splits
-from models.model_mil import MIL_fc, MIL_fc_mc
-from models.model_clam import CLAM_MB, CLAM_SB
+from models.model_clam import CLAM_SB
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.metrics import auc as calc_auc
@@ -128,36 +127,24 @@ def train(datasets, cur, args):
                   'n_classes': args.n_classes, 
                   "embed_dim": args.embed_dim}
     
-    if args.model_size is not None and args.model_type != 'mil':
+    if args.model_size is not None:
         model_dict.update({"size_arg": args.model_size})
     
-    if args.model_type in ['clam_sb', 'clam_mb']:
-        if args.subtyping:
-            model_dict.update({'subtyping': True})
-        
-        if args.B > 0:
-            model_dict.update({'k_sample': args.B})
-        
-        if args.inst_loss == 'svm':
-            from topk.svm import SmoothTop1SVM
-            instance_loss_fn = SmoothTop1SVM(n_classes = 2)
-            if device.type == 'cuda':
-                instance_loss_fn = instance_loss_fn.cuda()
-        else:
-            instance_loss_fn = nn.CrossEntropyLoss()
-        
-        if args.model_type =='clam_sb':
-            model = CLAM_SB(**model_dict, instance_loss_fn=instance_loss_fn)
-        elif args.model_type == 'clam_mb':
-            model = CLAM_MB(**model_dict, instance_loss_fn=instance_loss_fn)
-        else:
-            raise NotImplementedError
+    if args.subtyping:
+        model_dict.update({'subtyping': True})
     
-    else: # args.model_type == 'mil'
-        if args.n_classes > 2:
-            model = MIL_fc_mc(**model_dict)
-        else:
-            model = MIL_fc(**model_dict)
+    if args.B > 0:
+        model_dict.update({'k_sample': args.B})
+    
+    if args.inst_loss == 'svm':
+        from topk.svm import SmoothTop1SVM
+        instance_loss_fn = SmoothTop1SVM(n_classes = 2)
+        if device.type == 'cuda':
+            instance_loss_fn = instance_loss_fn.cuda()
+    else:
+        instance_loss_fn = nn.CrossEntropyLoss()
+    
+    model = CLAM_SB(**model_dict, instance_loss_fn=instance_loss_fn)
     
     _ = model.to(device)
     print('Done!')
@@ -182,7 +169,7 @@ def train(datasets, cur, args):
     print('Done!')
 
     for epoch in range(args.max_epochs):
-        if args.model_type in ['clam_sb', 'clam_mb'] and not args.no_inst_cluster:     
+        if not args.no_inst_cluster:     
             train_loop_clam(epoch, model, train_loader, optimizer, args.n_classes, args.bag_weight, writer, loss_fn)
             stop = validate_clam(cur, epoch, model, val_loader, args.n_classes, 
                 early_stopping, writer, loss_fn, args.results_dir)
